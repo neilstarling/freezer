@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freezer Inventory</title>
+    <meta name="theme-color" content="#0b7a87">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>❄️ Freezer Inventory</h1>
+        <nav class="main-nav">
+            <button class="nav-btn active" data-screen="inventory">Inventory</button>
+            <button class="nav-btn" data-screen="expiry">Expiration</button>
+            <button class="nav-btn" data-screen="add">Add Item</button>
+            <button id="install-app-button" class="install-app-button" type="button" data-action="install-app" hidden>Install App</button>
+        </nav>
+    </header>
+
+    <!-- INVENTORY SCREEN -->
+    <main id="inventory-screen" class="screen-view active">
+        <div class="gender-tabs">
+            <button class="tab-btn active" id="tab-all">All Items</button>
+            <button class="tab-btn" id="tab-expired">Expired</button>
+            <button class="tab-btn" id="tab-upcoming">Upcoming</button>
+        </div>
+        <div id="items-list"></div>
+    </main>
+
+    <!-- EXPIRY SCREEN -->
+    <main id="expiry-screen" class="screen-view">
+        <h2>📅 Expiration Status</h2>
+        <div id="expiry-status"></div>
+    </main>
+
+    <!-- ADD ITEM FORM -->
+    <section class="add-item-form" id="add-item-form">
+        <form id="add-item-form">
+            <input type="text" id="item-name" placeholder="Item Name" required>
+            <select id="item-category">
+                <option value="meat">Meat</option>
+                <option value="vegetables">Vegetables</option>
+                <option value="ice-cream">Ice Cream</option>
+                <option value="bread">Bread</option>
+                <option value="dessert">Dessert</option>
+                <option value="other">Other</option>
+            </select>
+            <input type="date" id="item-date" required>
+            <button type="submit" data-action="save-item">Save Item</button>
+        </form>
+    </section>
+
+    <script defer src="app.js"></script>
+</body>
+</html>

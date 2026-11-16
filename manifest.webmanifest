@@ -1,0 +1,31 @@
+{
+  "id": "freezer-inventory",
+  "name": "Freezer Inventory",
+  "short_name": "Freezer",
+  "description": "Track what's stored in your freezer, including item counts and expiration dates.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b7a87",
+  "theme_color": "#0b7a87",
+  "icons": [
+    {
+      "src": "icons/freezer192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/freezer512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/freezer512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

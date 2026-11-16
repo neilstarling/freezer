@@ -1,0 +1,44 @@
+/* APPLICATION UNIVERSAL STYLES */
+body { font-family: Arial, sans-serif; background: #eef2f5; margin: 0; padding: 20px; color: #333; }
+header { text-align: center; margin-bottom: 20px; }
+h1 { color: #1a365d; margin-bottom: 15px; }
+h2 { color: #1a365d; }
+.nav-btn, .tab-btn, button { padding: 10px; font-size: 0.9rem; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: bold; background: #cbd5e1; color: #475569; }
+.install-app-button { background: #0f766e; color: #fff; }
+.nav-btn.active, .tab-btn.active { background: #1a365d !important; color: #fff !important; }
+.screen-view { display: none; }
+.screen-view.active { display: block; }
+
+/* ADD ITEM FORM */
+.add-item-form { max-width: 800px; margin: 0 auto 25px auto; background: #fff; padding: 15px; border-radius: 8px; display: flex; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); align-items: center; flex-wrap: wrap; }
+.add-item-form input { flex-grow: 1; min-width: 150px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.add-item-form select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; min-width: 150px; }
+.add-item-form button { background: #10b981; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+
+/* TABS */
+.gender-tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+.tab-btn { background: #cbd5e1; color: #475569; }
+
+/* ITEMS LIST */
+#items-list { display: flex; flex-direction: column; gap: 10px; max-width: 800px; margin: 0 auto; }
+.item-tile { padding: 15px; border-radius: 8px; font-weight: bold; font-size: 0.95rem; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: relative; overflow: hidden; padding-left: 45px; background: #fff; color: #000; border-left: 8px solid var(--category-color, #333); }
+.item-tile.expired { border-left-color: #dc2626; background: #fef2f2; }
+.item-tile.upcoming { border-left-color: #f59e0b; background: #fffbeb; }
+.item-name { font-size: 1.1rem; margin-bottom: 5px; }
+.item-meta { font-size: 0.85rem; font-weight: normal; color: #475569; }
+.item-date { color: #64748b; }
+.item-date.expired { color: #dc2626; font-weight: bold; }
+.item-date.upcoming { color: #f59e0b; font-weight: bold; }
+.item-delete { position: absolute; right: 8px; top: 8px; padding: 4px 8px; background: rgba(15, 23, 42, 0.12); color: inherit; font-size: 1.1rem; line-height: 1; border: none; border-radius: 4px; cursor: pointer; }
+
+/* EXPIRY SCREEN */
+#expiry-status { margin-top: 15px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.expiry-section { margin-bottom: 20px; }
+.expiry-section h3 { margin-top: 0; color: #1a365d; }
+.expiry-empty { color: #64748b; font-style: italic; }
+
+/* NAVIGATION */
+.main-nav { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+
+/* EMPTY STATE */
+#items-list:empty::before { content: "No items yet. Click 'Add Item' to get started."; display: block; text-align: center; color: #64748b; padding: 40px; }
