@@ -10,10 +10,10 @@ h2 { color: #1a365d; }
 .screen-view.active { display: block; }
 
 /* ADD ITEM FORM */
-.add-item-form { max-width: 800px; margin: 0 auto 25px auto; background: #fff; padding: 15px; border-radius: 8px; display: flex; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); align-items: center; flex-wrap: wrap; }
-.add-item-form input { flex-grow: 1; min-width: 150px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
-.add-item-form select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; min-width: 150px; }
-.add-item-form button { background: #10b981; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+#add-item-form { max-width: 800px; margin: 0 auto 25px auto; background: #fff; padding: 15px; border-radius: 8px; display: flex; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); align-items: center; flex-wrap: wrap; }
+#add-item-form input { flex-grow: 1; min-width: 150px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+#add-item-form select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; min-width: 150px; }
+#add-item-form button { background: #10b981; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
 
 /* TABS */
 .gender-tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }

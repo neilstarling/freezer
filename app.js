@@ -13,6 +13,7 @@ const CATEGORY_COLORS = {
 };
 
 let items = JSON.parse(localStorage.getItem(ITEMS_KEY)) || [];
+let currentFilter = 'all';
 
 // DOM Elements
 const itemsList = document.getElementById('items-list');
@@ -25,12 +26,16 @@ const tabAll = document.getElementById('tab-all');
 const tabExpired = document.getElementById('tab-expired');
 const tabUpcoming = document.getElementById('tab-upcoming');
 const navButtons = document.querySelectorAll('.nav-btn');
+const installButton = document.getElementById('install-app-button');
+let deferredInstallPrompt = null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     renderItems();
     setupEventListeners();
     updateExpiryStatus();
+    setupInstallPrompt();
+    itemDate.value = new Date().toISOString().split('T')[0];
 });
 
 // Event Listeners
@@ -44,10 +49,43 @@ function setupEventListeners() {
     tabUpcoming.addEventListener('click', () => switchTab('upcoming'));
     navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-            navButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            const screenId = btn.dataset.screen;
+            navButtons.forEach(b => {
+                b.classList.toggle('active', b.dataset.screen === screenId);
+            });
+            document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
+            const screen = document.getElementById(`${screenId}-screen`);
+            if (screen) screen.classList.add('active');
         });
     });
+    if (installButton) {
+        installButton.addEventListener('click', installPwa);
+    }
+}
+
+// PWA Install Prompt
+function setupInstallPrompt() {
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        if (installButton) installButton.hidden = false;
+    });
+}
+
+async function installPwa() {
+    if (!deferredInstallPrompt) {
+        if (installButton) installButton.hidden = true;
+        return;
+    }
+    const prompt = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    if (installButton) installButton.hidden = true;
+    try {
+        await prompt.prompt();
+        await prompt.userChoice;
+    } catch (error) {
+        console.error('PWA installation prompt failed:', error);
+    }
 }
 
 // Add Item
@@ -116,6 +154,7 @@ function deleteItem(id) {
 
 // Switch Tab
 function switchTab(filter) {
+    currentFilter = filter;
     tabAll.classList.toggle('active', filter === 'all');
     tabExpired.classList.toggle('active', filter === 'expired');
     tabUpcoming.classList.toggle('active', filter === 'upcoming');
@@ -140,7 +179,7 @@ function updateExpiryStatus() {
             <p>Still good: <strong style="color: #059669;">${upcoming}</strong></p>
         </div>
         ${expired > 0 ? '<p style="color: #dc2626; font-size: 0.9rem; margin: 10px 0;">⚠️ These items have expired! Check them immediately.</p>' : ''}
-        ${upcoming <= 3 ? '<p style="color: #f59e0b; font-size: 0.9rem; margin: 10px 0;">⏰ Only ${upcoming} item(s) expiring soon! Use them up.</p>' : ''}
+        ${upcoming <= 3 ? `<p style="color: #f59e0b; font-size: 0.9rem; margin: 10px 0;">⏰ Only ${upcoming} item(s) expiring soon! Use them up.</p>` : ''}
     `;
 }
 
@@ -168,7 +207,7 @@ function importItems(file) {
         try {
             const imported = JSON.parse(e.target.result);
             if (Array.isArray(imported)) {
-                items = [...new Set([...items, ...imported.map(i => ({ ...i, id: i.id || Date.now() })))];
+                items = [...new Set([...items, ...imported.map(i => ({ ...i, id: i.id || Date.now() })))]];
                 saveItems();
                 renderItems();
                 updateExpiryStatus();
