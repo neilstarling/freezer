@@ -45,6 +45,7 @@ const tabAll = document.getElementById('tab-all');
 const tabExpired = document.getElementById('tab-expired');
 const sortSelect = document.getElementById('sort-select');
 const quickAddList = document.getElementById('quick-add-list');
+const quickAddSearch = document.getElementById('quick-add-search');
 const exportButton = document.getElementById('export-button');
 const importButton = document.getElementById('import-button');
 const importFileInput = document.getElementById('import-file-input');
@@ -157,6 +158,9 @@ function setupEventListeners() {
             if (!card) return;
             quickAddPrevious(parseInt(card.dataset.quickAddId));
         });
+    }
+    if (quickAddSearch) {
+        quickAddSearch.addEventListener('input', () => renderQuickAdd(quickAddSearch.value));
     }
     addCategoryForm.addEventListener('submit', event => {
         event.preventDefault();
@@ -433,9 +437,9 @@ function switchOwnerFilter(owner) {
 }
 
 // Render Quick Add list - deduplicated by name
-function renderQuickAdd() {
+function renderQuickAdd(query = '') {
     if (!quickAddList) return;
-    
+
     // Build a map of unique items by name, keeping the most recent one
     const uniqueItems = new Map();
     items.forEach(item => {
@@ -445,30 +449,55 @@ function renderQuickAdd() {
         }
     });
 
-    if (uniqueItems.size === 0) {
-        quickAddList.innerHTML = '<p style="color: #64748b; text-align: center; padding: 40px;">No previous items yet. Add items to build your quick-add list.</p>';
+    let list = Array.from(uniqueItems.values());
+
+    // Filter by search query
+    const q = query.trim().toLowerCase();
+    if (q) list = list.filter(item => item.name.toLowerCase().includes(q));
+
+    if (list.length === 0) {
+        quickAddList.innerHTML = '<p style="color: #64748b; text-align: center; padding: 40px;">' + (items.length === 0 ? 'No previous items yet. Add items to build your quick-add list.' : 'No items match your search.') + '</p>';
         return;
     }
 
-    quickAddList.innerHTML = Array.from(uniqueItems.values())
-        .sort((a, b) => b.added - a.added)
-        .map(item => {
-            const category = categories.find(c => c.id === item.category);
-            const color = CATEGORY_COLORS[item.category] || '#333';
-            return `
-                <div class="quick-add-item" data-quick-add-id="${item.id}" style="border-left: 6px solid ${color}; padding: 15px; margin-bottom: 10px; background: #fff; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-weight: bold; font-size: 1.1rem;">${escapeHtml(item.name)}</div>
-                            <div style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">
-                                ${escapeHtml(OWNERS[item.owner] || OWNERS.shared)} · ${escapeHtml(category?.name || 'Uncategorized')}
+    // Group by owner in fixed order: hers, his, shared
+    const ownerOrder = ['hers', 'his', 'shared'];
+    const groups = {};
+    ownerOrder.forEach(o => groups[o] = []);
+    list.forEach(item => {
+        const owner = ownerOrder.includes(item.owner) ? item.owner : 'shared';
+        groups[owner].push(item);
+    });
+
+    // Sort each group alphabetically by name
+    ownerOrder.forEach(o => groups[o].sort((a, b) => a.name.localeCompare(b.name)));
+
+    // Render groups with headers
+    quickAddList.innerHTML = ownerOrder.map(owner => {
+        if (groups[owner].length === 0) return '';
+        return `
+            <div class="quick-add-group">
+                <div class="quick-add-group-header">${OWNERS[owner]}</div>
+                ${groups[owner].map(item => {
+                    const category = categories.find(c => c.id === item.category);
+                    const color = CATEGORY_COLORS[item.category] || '#333';
+                    return `
+                        <div class="quick-add-item" data-quick-add-id="${item.id}" style="border-left: 6px solid ${color};">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: bold; font-size: 1.1rem;">${escapeHtml(item.name)}</div>
+                                    <div style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">
+                                        ${escapeHtml(category?.name || 'Uncategorized')}
+                                    </div>
+                                </div>
+                                <span style="font-size: 0.8rem; color: #10b981; font-weight: bold;">Select</span>
                             </div>
                         </div>
-                        <span style="font-size: 0.8rem; color: #10b981; font-weight: bold;">Select</span>
-                    </div>
-                </div>
-            `;
-        }).join('');
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }).join('');
 }
 
 // Quick Add - pre-fill the Add Item form from a previous item template
