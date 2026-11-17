@@ -13,8 +13,9 @@
         <h1>❄️ Freezer Inventory</h1>
         <nav class="main-nav">
             <button class="nav-btn active" data-screen="inventory">Inventory</button>
-            <button class="nav-btn" data-screen="expiry">Expiration</button>
             <button class="nav-btn" data-screen="add">Add Item</button>
+            <button class="nav-btn" data-screen="quick-add">Quick Add</button>
+            <button class="nav-btn" data-screen="categories">Categories</button>
             <button id="install-app-button" class="install-app-button" type="button" data-action="install-app" hidden>Install App</button>
         </nav>
     </header>
@@ -24,33 +25,57 @@
         <div class="gender-tabs">
             <button class="tab-btn active" id="tab-all" data-filter="all">All Items</button>
             <button class="tab-btn" id="tab-expired" data-filter="expired">Expired</button>
-            <button class="tab-btn" id="tab-upcoming" data-filter="upcoming">Upcoming</button>
+        </div>
+        <div class="owner-tabs" aria-label="Filter by owner">
+            <button class="tab-btn owner-tab active" data-owner="all">All Owners</button>
+            <button class="tab-btn owner-tab" data-owner="hers">Hers</button>
+            <button class="tab-btn owner-tab" data-owner="his">His</button>
+            <button class="tab-btn owner-tab" data-owner="shared">Shared</button>
+        </div>
+        <div class="sort-dropdown-container" style="margin-bottom: 12px; display: flex; justify-content: center;">
+            <label for="sort-select" style="margin-right: 8px; font-weight: bold;">Sort by:</label>
+            <select id="sort-select" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                <option value="name">Name</option>
+                <option value="expiry">Expiry Date</option>
+                <option value="sellby">Sell By Date</option>
+            </select>
         </div>
         <div id="items-list"></div>
-    </main>
-
-    <!-- EXPIRY SCREEN -->
-    <main id="expiry-screen" class="screen-view">
-        <h2>📅 Expiration Status</h2>
-        <div id="expiry-status"></div>
     </main>
 
     <!-- ADD ITEM SCREEN -->
     <main id="add-screen" class="screen-view">
         <h2>➕ Add New Item</h2>
         <form id="add-item-form">
-            <input type="text" id="item-name" placeholder="Item Name" required>
-            <select id="item-category">
-                <option value="meat">Meat</option>
-                <option value="vegetables">Vegetables</option>
-                <option value="ice-cream">Ice Cream</option>
-                <option value="bread">Bread</option>
-                <option value="dessert">Dessert</option>
-                <option value="other">Other</option>
+            <input type="text" id="item-name" placeholder="Item Name" aria-label="Item name" required>
+            <select id="item-owner" aria-label="Owner">
+                <option value="hers">Hers</option>
+                <option value="his">His</option>
+                <option value="shared" selected>Shared</option>
             </select>
-            <input type="date" id="item-date" required>
+            <select id="item-category" aria-label="Food category"></select>
+            <input type="date" id="item-sellby" placeholder="Sell by (YYYY-MM-DD)" aria-label="Sell by date">
+            <p class="expiry-note">Items expire 30 days after they are added. Optional: enter a sell-by date.</p>
             <button type="submit" data-action="save-item">Save Item</button>
         </form>
+    </main>
+
+    <!-- QUICK ADD SCREEN -->
+    <main id="quick-add-screen" class="screen-view">
+        <h2>⚡ Quick Add</h2>
+        <p style="color: #64748b; margin-bottom: 20px;">Select a previously added item to pre-fill the Add Item form. Name, owner, and category are filled in automatically &mdash; just add the sell-by date and save.</p>
+        <div id="quick-add-list"></div>
+    </main>
+
+    <main id="categories-screen" class="screen-view">
+        <h2>Manage Food Categories</h2>
+        <p>Deleting a category moves its items to Shared / Uncategorized.</p>
+        <form id="add-category-form" class="category-form">
+            <label for="new-category-name">New category</label>
+            <input type="text" id="new-category-name" maxlength="40" required>
+            <button type="submit">Add Category</button>
+        </form>
+        <div id="category-list" class="category-list"></div>
     </main>
 
     <script defer src="app.js"></script>

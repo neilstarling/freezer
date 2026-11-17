@@ -1,10 +1,9 @@
-const CACHE_NAME = 'freezer-inventory-shell-v1';
+const CACHE_NAME = 'freezer-inventory-shell-v2';
 const APP_SHELL_FILES = [
     './',
     './index.html',
     './style.css',
     './app.js',
-    './firebase-config.js',
     './manifest.webmanifest',
     './icons/freezer192.png',
     './icons/freezer512.png',
