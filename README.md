@@ -14,7 +14,7 @@ A browser-based Progressive Web App for tracking what's stored in your freezer, 
 - **Filter by status**: View All or Expired items
 - **Sort items**: Sort by name, expiry date, or sell-by date
 - **Delete items**: Remove items you've used up
-- **Export/Import**: Save your inventory as JSON and restore it later
+- **Export/Import**: Back up your inventory as JSON and restore it later (adds imported items to the current list)
 - **Offline-first**: Works without an internet connection after first visit
 - **Installable**: Add to home screen as a standalone app
 

@@ -45,6 +45,9 @@ const tabAll = document.getElementById('tab-all');
 const tabExpired = document.getElementById('tab-expired');
 const sortSelect = document.getElementById('sort-select');
 const quickAddList = document.getElementById('quick-add-list');
+const exportButton = document.getElementById('export-button');
+const importButton = document.getElementById('import-button');
+const importFileInput = document.getElementById('import-file-input');
 const ownerTabs = document.querySelectorAll('.owner-tab');
 const categoryList = document.getElementById('category-list');
 const addCategoryForm = document.getElementById('add-category-form');
@@ -188,6 +191,21 @@ function setupEventListeners() {
     });
     if (installButton) {
         installButton.addEventListener('click', installPwa);
+    }
+    if (exportButton) {
+        exportButton.addEventListener('click', exportItems);
+    }
+    if (importButton && importFileInput) {
+        importButton.addEventListener('click', () => importFileInput.click());
+        importFileInput.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (file) {
+                if (confirm('Importing will add items to your current inventory. Continue?')) {
+                    importItems(file);
+                }
+                importFileInput.value = '';
+            }
+        });
     }
 }
 
