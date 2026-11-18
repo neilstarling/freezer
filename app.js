@@ -1,8 +1,9 @@
-// Freezer Inventory PWA
+// FIDO PWA
 // Manages freezer items with name, category, expiration date
 
 const ITEMS_KEY = 'freezer-inventory-items';
 const CATEGORIES_KEY = 'freezer-inventory-categories';
+const OWNER_LABELS_KEY = 'freezer-inventory-owner-labels';
 const EXPIRY_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 const UNCATEGORIZED_ID = 'uncategorized';
 const OWNERS = {
@@ -30,7 +31,8 @@ const CATEGORY_COLORS = {
 
 let categories = loadCategories();
 let items = loadItems();
-let currentFilter = 'all';
+let ownerLabels = loadOwnerLabels();
+let currentFilter = 'fresh';
 let currentOwnerFilter = 'all';
 let currentSort = 'name';
 
@@ -41,7 +43,7 @@ const itemName = document.getElementById('item-name');
 const itemOwner = document.getElementById('item-owner');
 const itemCategory = document.getElementById('item-category');
 const itemSellBy = document.getElementById('item-sellby');
-const tabAll = document.getElementById('tab-all');
+const tabFresh = document.getElementById('tab-fresh');
 const tabExpired = document.getElementById('tab-expired');
 const sortSelect = document.getElementById('sort-select');
 const quickAddList = document.getElementById('quick-add-list');
@@ -53,6 +55,9 @@ const ownerTabs = document.querySelectorAll('.owner-tab');
 const categoryList = document.getElementById('category-list');
 const addCategoryForm = document.getElementById('add-category-form');
 const newCategoryName = document.getElementById('new-category-name');
+const ownerLabelForm = document.getElementById('owner-label-form');
+const settingsTabButtons = document.querySelectorAll('.settings-tab-btn');
+const settingsPanels = document.querySelectorAll('.settings-panel');
 const navButtons = document.querySelectorAll('.nav-btn');
 const installButton = document.getElementById('install-app-button');
 let deferredInstallPrompt = null;
@@ -60,6 +65,7 @@ let deferredInstallPrompt = null;
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     renderCategories();
+    renderOwnerLabels();
     renderItems();
     renderQuickAdd();
     setupEventListeners();
@@ -99,6 +105,28 @@ function loadCategories() {
     }
 }
 
+function loadOwnerLabels() {
+    const storedLabels = localStorage.getItem(OWNER_LABELS_KEY);
+    if (!storedLabels) return { ...OWNERS };
+
+    try {
+        const parsed = JSON.parse(storedLabels);
+        const labels = Object.fromEntries(Object.keys(OWNERS).map(owner => [
+            owner,
+            typeof parsed?.[owner] === 'string' && parsed[owner].trim()
+                ? parsed[owner].trim()
+                : OWNERS[owner]
+        ]));
+        if (new Set(Object.values(labels).map(label => label.toLowerCase())).size !== Object.keys(OWNERS).length) {
+            throw new TypeError('Saved owner labels are not unique.');
+        }
+        return labels;
+    } catch (error) {
+        console.error('Unable to load saved owner labels:', error);
+        return { ...OWNERS };
+    }
+}
+
 function loadItems() {
     const storedItems = localStorage.getItem(ITEMS_KEY);
     if (!storedItems) return [];
@@ -106,12 +134,20 @@ function loadItems() {
     try {
         const parsedItems = JSON.parse(storedItems);
         if (!Array.isArray(parsedItems)) throw new TypeError('Stored inventory is not an array.');
-        return parsedItems.filter(item => item && typeof item === 'object').map(item => {
+        const normalizedItems = parsedItems.filter(item => item && typeof item === 'object').map(item => {
+            const name = typeof item.name === 'string' ? item.name.trim() : '';
+            if (!name) return null;
             const added = new Date(item.added);
             const addedAt = Number.isNaN(added.getTime()) ? new Date() : added;
-            const sellBy = item.sellBy ? new Date(item.sellBy) : null;
+            const sellBy = parseSellByDate(item.sellBy);
+            const id = (typeof item.id === 'number' && Number.isFinite(item.id))
+                || (typeof item.id === 'string' && item.id.trim())
+                ? item.id
+                : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
             return {
                 ...item,
+                id,
+                name,
                 owner: isKnownOwner(item.owner) ? item.owner : 'shared',
                 category: categories.some(category => category.id === item.category)
                     ? item.category
@@ -121,6 +157,7 @@ function loadItems() {
                 date: new Date(addedAt.getTime() + EXPIRY_DURATION_MS)
             };
         });
+        return normalizedItems.filter(item => item !== null);
     } catch (error) {
         console.error('Unable to load saved freezer items:', error);
         return [];
@@ -135,13 +172,46 @@ function isKnownOwner(owner) {
     return Object.prototype.hasOwnProperty.call(OWNERS, owner);
 }
 
+function parseSellByDate(value) {
+    if (!value) return null;
+
+    const dateString = typeof value === 'string' ? value : '';
+    const dateParts = dateString.match(/^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.000)?Z)?$/);
+    const date = dateParts
+        ? new Date(Number(dateParts[1]), Number(dateParts[2]) - 1, Number(dateParts[3]))
+        : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function daysBetweenLocalDates(from, to) {
+    const fromDay = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+    const toDay = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
+    return Math.round((toDay - fromDay) / 86400000);
+}
+
+function normalizeOwnerLabels(labels) {
+    if (!labels || typeof labels !== 'object') {
+        throw new TypeError('Owner names must be an object.');
+    }
+
+    const normalized = Object.fromEntries(Object.keys(OWNERS).map(owner => {
+        const label = typeof labels[owner] === 'string' ? labels[owner].trim() : '';
+        if (!label) throw new TypeError('Owner names cannot be empty.');
+        return [owner, label];
+    }));
+    if (new Set(Object.values(normalized).map(label => label.toLowerCase())).size !== Object.keys(OWNERS).length) {
+        throw new TypeError('Owner names must be unique.');
+    }
+    return normalized;
+}
+
 // Event Listeners
 function setupEventListeners() {
     addItemForm.addEventListener('submit', e => {
         e.preventDefault();
         addItem();
     });
-    tabAll.addEventListener('click', () => switchTab('all'));
+    tabFresh.addEventListener('click', () => switchTab('fresh'));
     tabExpired.addEventListener('click', () => switchTab('expired'));
     ownerTabs.forEach(button => {
         button.addEventListener('click', () => switchOwnerFilter(button.dataset.owner));
@@ -152,16 +222,29 @@ function setupEventListeners() {
             renderItems();
         });
     }
+
     if (quickAddList) {
         quickAddList.addEventListener('click', event => {
             const card = event.target.closest('[data-quick-add-id]');
             if (!card) return;
-            quickAddPrevious(parseInt(card.dataset.quickAddId));
+            quickAddPrevious(card.dataset.quickAddId);
         });
     }
     if (quickAddSearch) {
         quickAddSearch.addEventListener('input', () => renderQuickAdd(quickAddSearch.value));
     }
+    if (ownerLabelForm) {
+        ownerLabelForm.addEventListener('submit', event => {
+            event.preventDefault();
+            saveOwnerLabelEdits();
+        });
+        ownerLabelForm.addEventListener('input', event => {
+            event.target.setCustomValidity('');
+        });
+    }
+    settingsTabButtons.forEach(button => {
+        button.addEventListener('click', () => switchSettingsTab(button.dataset.settingsTab));
+    });
     addCategoryForm.addEventListener('submit', event => {
         event.preventDefault();
         addCategory(newCategoryName.value);
@@ -191,6 +274,7 @@ function setupEventListeners() {
             document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
             const screen = document.getElementById(`${screenId}-screen`);
             if (screen) screen.classList.add('active');
+            if (screenId === 'settings') switchSettingsTab('settings');
         });
     });
     if (installButton) {
@@ -229,6 +313,56 @@ function renderCategories() {
             </form>
         `;
     }).join('');
+}
+
+function renderOwnerLabels() {
+    ownerTabs.forEach(button => {
+        const owner = button.dataset.owner;
+        button.textContent = owner === 'all' ? 'All' : ownerLabels[owner];
+    });
+    Array.from(itemOwner.options).forEach(option => {
+        if (isKnownOwner(option.value)) option.textContent = ownerLabels[option.value];
+    });
+    Object.keys(OWNERS).forEach(owner => {
+        ownerLabelForm.elements[owner].value = ownerLabels[owner];
+    });
+}
+
+function saveOwnerLabelEdits() {
+    const labels = Object.fromEntries(Object.keys(OWNERS).map(owner => [
+        owner,
+        ownerLabelForm.elements[owner].value.trim()
+    ]));
+    const emptyOwner = Object.keys(labels).find(owner => !labels[owner]);
+    const duplicateOwner = Object.keys(labels).find((owner, index) =>
+        Object.values(labels).some((label, labelIndex) =>
+            labelIndex !== index && label.toLowerCase() === labels[owner].toLowerCase()
+        )
+    );
+    const invalidOwner = emptyOwner || duplicateOwner;
+    if (invalidOwner) {
+        const input = ownerLabelForm.elements[invalidOwner];
+        input.setCustomValidity(emptyOwner ? 'Enter a name for each owner.' : 'Owner names must be unique.');
+        input.reportValidity();
+        return;
+    }
+
+    ownerLabels = normalizeOwnerLabels(labels);
+    localStorage.setItem(OWNER_LABELS_KEY, JSON.stringify(ownerLabels));
+    renderOwnerLabels();
+    renderItems();
+    renderQuickAdd();
+}
+
+function switchSettingsTab(tab) {
+    settingsTabButtons.forEach(button => {
+        const active = button.dataset.settingsTab === tab;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', String(active));
+    });
+    settingsPanels.forEach(panel => {
+        panel.hidden = panel.dataset.settingsPanel !== tab;
+    });
 }
 
 function saveCategories() {
@@ -279,7 +413,7 @@ function deleteCategory(id) {
 
     categories = categories.filter(category => category.id !== id);
     items = items.map(item => item.category === id
-        ? { ...item, owner: 'shared', category: UNCATEGORIZED_ID }
+        ? { ...item, category: UNCATEGORIZED_ID }
         : item
     );
     saveCategories();
@@ -320,7 +454,7 @@ function addItem() {
     const owner = itemOwner.value;
     const category = itemCategory.value;
     const sellByValue = itemSellBy ? itemSellBy.value.trim() : '';
-    const sellByDate = sellByValue ? new Date(sellByValue) : null;
+    const sellByDate = parseSellByDate(sellByValue);
     if (!name || !isKnownOwner(owner) || !categories.some(entry => entry.id === category)) return;
 
     const added = new Date();
@@ -346,6 +480,7 @@ function renderItems(filter = currentFilter) {
     const now = new Date();
     let filtered = items;
     if (filter === 'expired') filtered = items.filter(item => isExpired(item.date, now));
+    if (filter === 'fresh') filtered = items.filter(item => !isExpired(item.date, now));
     if (currentOwnerFilter !== 'all') {
         filtered = filtered.filter(item => item.owner === currentOwnerFilter);
     }
@@ -354,37 +489,48 @@ function renderItems(filter = currentFilter) {
     filtered = sortItems(filtered, currentSort);
 
     if (!filtered.length) {
-        itemsList.innerHTML = '<p class="empty-state">No items yet. Click "Add Item" to get started.</p>';
+        const emptyMessage = items.length === 0
+            ? 'No items yet. Open Settings to add your first item.'
+            : filter === 'fresh'
+                ? 'No fresh items.'
+                : filter === 'expired'
+                    ? 'No expired items.'
+                    : 'No items match this filter.';
+        itemsList.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
         return;
     }
     itemsList.innerHTML = filtered.map(item => {
         const color = CATEGORY_COLORS[item.category] || '#333';
         const category = categories.find(entry => entry.id === item.category);
         const expired = isExpired(item.date, now);
+        const itemId = escapeHtml(String(item.id));
         const percentage = Math.max(0, Math.min(100,
             Math.ceil((item.date.getTime() - now.getTime()) / EXPIRY_DURATION_MS * 100)
         ));
+        const daysInFreezer = Math.max(0, Math.floor((now.getTime() - item.added.getTime()) / 86400000));
+        const daysUntilSellBy = item.sellBy ? daysBetweenLocalDates(now, item.sellBy) : null;
         const dateStr = item.date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
         const sellByStr = item.sellBy ? item.sellBy.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
         return `
-            <div class="item-tile ${expired ? 'expired' : ''}" style="--category-color: ${color}" data-id="${item.id}">
+            <div class="item-tile ${expired ? 'expired' : ''}" style="--category-color: ${color}" data-id="${itemId}">
                 <span class="item-name">${escapeHtml(item.name)}</span>
                 <div class="item-meta">
                     <span class="item-date ${expired ? 'expired' : ''}">Expires: ${dateStr}</span>
-                    ${item.sellBy ? `<span class="item-sellby">Sell by: ${sellByStr}</span>` : ''}
-                    <span>${escapeHtml(OWNERS[item.owner] || OWNERS.shared)} · ${escapeHtml(category?.name || 'Uncategorized')}</span>
+                    <span>In freezer: ${daysInFreezer} ${daysInFreezer === 1 ? 'day' : 'days'}</span>
+                    ${item.sellBy ? `<span class="item-sellby">Sell by: ${sellByStr} · ${daysUntilSellBy >= 0 ? `${daysUntilSellBy} ${daysUntilSellBy === 1 ? 'day' : 'days'} to go` : `${Math.abs(daysUntilSellBy)} ${Math.abs(daysUntilSellBy) === 1 ? 'day' : 'days'} past`}</span>` : '<span class="item-date">No sell-by date</span>'}
+                    <span>${escapeHtml(ownerLabels[item.owner] || ownerLabels.shared)} · ${escapeHtml(category?.name || 'Uncategorized')}</span>
                 </div>
                 <div class="time-remaining" role="progressbar" aria-label="Time remaining" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percentage}">
                     <div class="time-remaining-bar" style="width: ${percentage}%"></div>
                 </div>
                 <span class="time-remaining-label">Time left: ${percentage}%</span>
-                <button class="item-delete" data-id="${item.id}" aria-label="Remove ${escapeHtml(item.name)}">✕</button>
+                <button class="item-delete" data-id="${itemId}" aria-label="Remove ${escapeHtml(item.name)}">✕</button>
             </div>
         `;
     }).join('');
     document.querySelectorAll('.item-delete').forEach(btn => {
         btn.addEventListener('click', e => {
-            const id = parseInt(e.target.dataset.id);
+            const id = e.target.dataset.id;
             deleteItem(id);
         });
     });
@@ -414,7 +560,7 @@ function sortItems(arr, sortField) {
 
 // Delete Item
 function deleteItem(id) {
-    items = items.filter(item => item.id !== id);
+    items = items.filter(item => String(item.id) !== String(id));
     saveItems();
     renderItems();
     renderQuickAdd();
@@ -423,7 +569,7 @@ function deleteItem(id) {
 // Switch Tab
 function switchTab(filter) {
     currentFilter = filter;
-    tabAll.classList.toggle('active', filter === 'all');
+    tabFresh.classList.toggle('active', filter === 'fresh');
     tabExpired.classList.toggle('active', filter === 'expired');
     renderItems(filter);
 }
@@ -477,12 +623,13 @@ function renderQuickAdd(query = '') {
         if (groups[owner].length === 0) return '';
         return `
             <div class="quick-add-group">
-                <div class="quick-add-group-header">${OWNERS[owner]}</div>
+                <div class="quick-add-group-header">${escapeHtml(ownerLabels[owner])}</div>
                 ${groups[owner].map(item => {
                     const category = categories.find(c => c.id === item.category);
                     const color = CATEGORY_COLORS[item.category] || '#333';
+                    const itemId = escapeHtml(String(item.id));
                     return `
-                        <div class="quick-add-item" data-quick-add-id="${item.id}" style="border-left: 6px solid ${color};">
+                        <div class="quick-add-item" data-quick-add-id="${itemId}" style="border-left: 6px solid ${color};">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
                                     <div style="font-weight: bold; font-size: 1.1rem;">${escapeHtml(item.name)}</div>
@@ -502,7 +649,7 @@ function renderQuickAdd(query = '') {
 
 // Quick Add - pre-fill the Add Item form from a previous item template
 function quickAddPrevious(templateId) {
-    const templateItem = items.find(i => i.id === templateId);
+    const templateItem = items.find(i => String(i.id) === String(templateId));
     if (!templateItem) return;
 
     itemName.value = templateItem.name;
@@ -510,9 +657,9 @@ function quickAddPrevious(templateId) {
     itemCategory.value = templateItem.category;
     if (itemSellBy) itemSellBy.value = '';
 
-    // Switch to add screen so the user can enter a sell-by date
+    // Switch to settings so the user can enter a sell-by date.
     navButtons.forEach(btn => {
-        if (btn.dataset.screen === 'add') {
+        if (btn.dataset.screen === 'settings') {
             btn.click();
         }
     });
@@ -526,14 +673,14 @@ function saveItems() {
 
 // Export as JSON
 function exportItems() {
-    const data = JSON.stringify({ items, categories }, null, 2);
+    const data = JSON.stringify({ items, categories, ownerLabels }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `freezer-inventory-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 // Import from JSON
@@ -542,42 +689,67 @@ function importItems(file) {
     reader.onload = e => {
         try {
             const imported = JSON.parse(e.target.result);
-            // Support both new format { items, categories } and legacy array format
+            // Support the current backup format and legacy array format.
             const importedItems = Array.isArray(imported) ? imported : imported.items;
             const importedCategories = Array.isArray(imported) ? null : imported.categories;
+            const importedOwnerLabels = Array.isArray(imported) ? undefined : imported.ownerLabels;
             if (!Array.isArray(importedItems)) {
                 alert('Invalid data format.');
                 return;
             }
-            {
-                const importedAt = Date.now();
-                // Overwrite categories if provided in the backup
-                if (Array.isArray(importedCategories) && importedCategories.length > 0) {
-                    categories.splice(0, categories.length, ...importedCategories);
-                    saveCategories();
-                }
-                const normalizedItems = importedItems.map((item, index) => {
-                    const addedDate = new Date(item.added);
-                    const added = Number.isNaN(addedDate.getTime()) ? new Date(importedAt + index) : addedDate;
-                    const sellBy = item.sellBy ? new Date(item.sellBy) : null;
-                    return {
-                        ...item,
-                        id: item.id ?? importedAt + index,
-                        owner: isKnownOwner(item.owner) ? item.owner : 'shared',
-                        category: categories.some(category => category.id === item.category)
-                            ? item.category
-                            : UNCATEGORIZED_ID,
-                        added,
-                        sellBy: sellBy && !Number.isNaN(sellBy.getTime()) ? sellBy : null,
-                        date: new Date(added.getTime() + EXPIRY_DURATION_MS)
-                    };
-                });
-                items = normalizedItems;
-                saveItems();
-                renderItems();
-                renderQuickAdd();
-                alert('Inventory imported successfully!');
+
+            const importedAt = Date.now();
+            let nextCategories = categories;
+            let nextOwnerLabels = ownerLabels;
+
+            if (Array.isArray(importedCategories)) {
+                nextCategories = normalizeImportedCategories(importedCategories);
             }
+            if (importedOwnerLabels !== undefined) {
+                nextOwnerLabels = normalizeOwnerLabels(importedOwnerLabels);
+            }
+
+            const normalizedItems = importedItems.map((item, index) => {
+                if (!item || typeof item !== 'object') {
+                    throw new TypeError(`Item ${index + 1} is invalid.`);
+                }
+                if (typeof item.name !== 'string' || !item.name.trim()) {
+                    throw new TypeError(`Item ${index + 1} needs a name.`);
+                }
+
+                const addedDate = new Date(item.added);
+                const added = Number.isNaN(addedDate.getTime()) ? new Date(importedAt + index) : addedDate;
+                const sellBy = parseSellByDate(item.sellBy);
+                const id = (typeof item.id === 'number' && Number.isFinite(item.id))
+                    || (typeof item.id === 'string' && item.id.trim())
+                    ? item.id
+                    : `${importedAt}-${index}`;
+
+                return {
+                    ...item,
+                    id,
+                    name: item.name.trim(),
+                    owner: isKnownOwner(item.owner) ? item.owner : 'shared',
+                    category: nextCategories.some(category => category.id === item.category)
+                        ? item.category
+                        : UNCATEGORIZED_ID,
+                    added,
+                    sellBy: sellBy && !Number.isNaN(sellBy.getTime()) ? sellBy : null,
+                    date: new Date(added.getTime() + EXPIRY_DURATION_MS)
+                };
+            });
+
+            categories = nextCategories;
+            items = normalizedItems;
+            ownerLabels = nextOwnerLabels;
+            saveCategories();
+            saveItems();
+            localStorage.setItem(OWNER_LABELS_KEY, JSON.stringify(ownerLabels));
+            renderCategories();
+            renderOwnerLabels();
+            renderItems();
+            renderQuickAdd();
+            alert('Inventory imported successfully!');
         } catch (err) {
             alert('Error parsing JSON: ' + err.message);
         }
@@ -590,4 +762,38 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function normalizeImportedCategories(importedCategories) {
+    if (importedCategories.length === 0) {
+        throw new TypeError('The categories list cannot be empty.');
+    }
+
+    const normalized = [];
+    const seenIds = new Set();
+    const seenNames = new Set();
+
+    for (const [index, category] of importedCategories.entries()) {
+        if (!category || typeof category !== 'object'
+            || typeof category.id !== 'string' || !category.id.trim()
+            || typeof category.name !== 'string' || !category.name.trim()) {
+            throw new TypeError(`Category ${index + 1} is invalid.`);
+        }
+
+        const id = category.id.trim();
+        const name = category.name.trim();
+        const normalizedName = name.toLowerCase();
+        if (seenIds.has(id) || seenNames.has(normalizedName)) {
+            throw new TypeError('Category IDs and names must be unique.');
+        }
+
+        seenIds.add(id);
+        seenNames.add(normalizedName);
+        normalized.push({ id, name });
+    }
+
+    if (!normalized.some(category => category.id === UNCATEGORIZED_ID)) {
+        normalized.push({ id: UNCATEGORIZED_ID, name: 'Uncategorized' });
+    }
+    return normalized;
 }

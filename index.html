@@ -3,34 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freezer Inventory</title>
+    <title>FIDO</title>
     <meta name="theme-color" content="#0b7a87">
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.webmanifest?v=9">
+    <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
     <header>
-        <h1>❄️ Freezer Inventory</h1>
+        <h1>❄️ FIDO</h1>
+        <button class="nav-btn settings-button" data-screen="settings" type="button" aria-label="Settings" title="Settings">⚙</button>
         <nav class="main-nav">
             <button class="nav-btn active" data-screen="inventory">Inventory</button>
-            <button class="nav-btn" data-screen="add">Add Item</button>
             <button class="nav-btn" data-screen="quick-add">Quick Add</button>
-            <button class="nav-btn" data-screen="categories">Categories</button>
             <button id="install-app-button" class="install-app-button" type="button" data-action="install-app" hidden>Install App</button>
         </nav>
     </header>
 
     <!-- INVENTORY SCREEN -->
     <main id="inventory-screen" class="screen-view active">
-        <div class="gender-tabs">
-            <button class="tab-btn active" id="tab-all" data-filter="all">All Items</button>
-            <button class="tab-btn" id="tab-expired" data-filter="expired">Expired</button>
-        </div>
-        <div class="owner-tabs" aria-label="Filter by owner">
-            <button class="tab-btn owner-tab active" data-owner="all">All Owners</button>
-            <button class="tab-btn owner-tab" data-owner="hers">Hers</button>
-            <button class="tab-btn owner-tab" data-owner="his">His</button>
-            <button class="tab-btn owner-tab" data-owner="shared">Shared</button>
+        <div class="inventory-filter-row">
+            <div class="gender-tabs" aria-label="Filter by freshness">
+                <button class="tab-btn status-tab active" id="tab-fresh" data-filter="fresh">Fresh</button>
+                <button class="tab-btn status-tab" id="tab-expired" data-filter="expired">Expired</button>
+            </div>
+            <span class="filter-separator" aria-hidden="true"></span>
+            <div class="owner-tabs" aria-label="Filter by owner">
+                <button class="tab-btn owner-tab active" data-owner="all">All</button>
+                <button class="tab-btn owner-tab" data-owner="hers">Hers</button>
+                <button class="tab-btn owner-tab" data-owner="his">His</button>
+                <button class="tab-btn owner-tab" data-owner="shared">Shared</button>
+            </div>
         </div>
         <div class="sort-dropdown-container" style="margin-bottom: 12px; display: flex; justify-content: center;">
             <label for="sort-select" style="margin-right: 8px; font-weight: bold;">Sort by:</label>
@@ -41,28 +43,6 @@
             </select>
         </div>
         <div id="items-list"></div>
-        <div class="backup-bar">
-            <button type="button" id="export-button" class="backup-btn" data-action="export-items">📤 Export JSON</button>
-            <button type="button" id="import-button" class="backup-btn" data-action="import-items">📥 Import JSON</button>
-            <input type="file" id="import-file-input" accept=".json,application/json" hidden>
-        </div>
-    </main>
-
-    <!-- ADD ITEM SCREEN -->
-    <main id="add-screen" class="screen-view">
-        <h2>➕ Add New Item</h2>
-        <form id="add-item-form">
-            <input type="text" id="item-name" placeholder="Item Name" aria-label="Item name" required>
-            <select id="item-owner" aria-label="Owner">
-                <option value="hers">Hers</option>
-                <option value="his">His</option>
-                <option value="shared" selected>Shared</option>
-            </select>
-            <select id="item-category" aria-label="Food category"></select>
-            <input type="date" id="item-sellby" placeholder="Sell by (YYYY-MM-DD)" aria-label="Sell by date">
-            <p class="expiry-note">Items expire 30 days after they are added. Optional: enter a sell-by date.</p>
-            <button type="submit" data-action="save-item">Save Item</button>
-        </form>
     </main>
 
     <!-- QUICK ADD SCREEN -->
@@ -75,17 +55,88 @@
         <div id="quick-add-list"></div>
     </main>
 
-    <main id="categories-screen" class="screen-view">
-        <h2>Manage Food Categories</h2>
-        <p>Deleting a category moves its items to Shared / Uncategorized.</p>
-        <form id="add-category-form" class="category-form">
-            <label for="new-category-name">New category</label>
-            <input type="text" id="new-category-name" maxlength="40" required>
-            <button type="submit">Add Category</button>
-        </form>
-        <div id="category-list" class="category-list"></div>
+    <main id="settings-screen" class="screen-view">
+        <h2>Settings</h2>
+        <div class="settings-tabs" role="tablist" aria-label="Settings pages">
+            <button class="tab-btn settings-tab-btn active" id="settings-tab-settings" type="button" role="tab" aria-selected="true" aria-controls="settings-panel" data-settings-tab="settings">Settings</button>
+            <button class="tab-btn settings-tab-btn" id="settings-tab-help" type="button" role="tab" aria-selected="false" aria-controls="help-panel" data-settings-tab="help">Help</button>
+        </div>
+        <div id="settings-panel" class="settings-panel" role="tabpanel" aria-labelledby="settings-tab-settings" data-settings-panel="settings">
+            <section class="settings-section">
+                <h3>➕ Add New Item</h3>
+                <form id="add-item-form">
+                    <input type="text" id="item-name" placeholder="Item Name" aria-label="Item name" required>
+                    <select id="item-owner" aria-label="Owner">
+                        <option value="hers">Hers</option>
+                        <option value="his">His</option>
+                        <option value="shared" selected>Shared</option>
+                    </select>
+                    <select id="item-category" aria-label="Food category"></select>
+                    <input type="date" id="item-sellby" placeholder="Sell by (YYYY-MM-DD)" aria-label="Sell by date">
+                    <p class="expiry-note">Items expire 30 days after they are added. Optional: enter a sell-by date.</p>
+                    <button type="submit" data-action="save-item">Save Item</button>
+                </form>
+            </section>
+            <section class="settings-section">
+                <h3>Manage Food Categories</h3>
+                <p>Deleting a category moves its items to Uncategorized.</p>
+                <form id="add-category-form" class="category-form">
+                    <label for="new-category-name">New category</label>
+                    <input type="text" id="new-category-name" maxlength="40" required>
+                    <button type="submit">Add Category</button>
+                </form>
+                <div id="category-list" class="category-list"></div>
+            </section>
+            <section class="settings-section">
+                <h3>Owner Names</h3>
+                <p>Choose the names shown for these owners. Existing items keep their owner assignments.</p>
+                <form id="owner-label-form" class="owner-label-form">
+                    <label class="owner-label-field" for="owner-label-hers">
+                        <span>Hers</span>
+                        <input type="text" id="owner-label-hers" name="hers" maxlength="30" required>
+                    </label>
+                    <label class="owner-label-field" for="owner-label-his">
+                        <span>His</span>
+                        <input type="text" id="owner-label-his" name="his" maxlength="30" required>
+                    </label>
+                    <label class="owner-label-field" for="owner-label-shared">
+                        <span>Shared</span>
+                        <input type="text" id="owner-label-shared" name="shared" maxlength="30" required>
+                    </label>
+                    <button type="submit">Save Owner Names</button>
+                </form>
+            </section>
+            <section class="settings-section">
+                <h3>Inventory Backup</h3>
+                <div class="backup-bar">
+                    <button type="button" id="export-button" class="backup-btn" data-action="export-items">📤 Export JSON</button>
+                    <button type="button" id="import-button" class="backup-btn" data-action="import-items">📥 Import JSON</button>
+                    <input type="file" id="import-file-input" accept=".json,application/json" hidden>
+                </div>
+            </section>
+        </div>
+        <section id="help-panel" class="settings-panel help-content" role="tabpanel" aria-labelledby="settings-tab-help" data-settings-panel="help" hidden>
+            <h3>FIDO Help</h3>
+            <p>FIDO helps you track freezer items, their owners, categories, and dates.</p>
+            <h4>Inventory</h4>
+            <ul>
+                <li><strong>Fresh</strong> shows items that have not reached their 30-day expiry date. Use <strong>Expired</strong> to see expired items.</li>
+                <li>Use the owner filters to see everyone’s items or one owner’s items. Sort by name, expiry date, or sell-by date.</li>
+                <li>Each item shows how many days it has been in the freezer and how many days remain until its sell-by date.</li>
+                <li>Use Quick Add to select a previous item and prefill the add form.</li>
+            </ul>
+            <h4>Settings</h4>
+            <ul>
+                <li>Add items, manage food categories, and export or import a JSON backup from the Settings tab.</li>
+                <li>Use Owner Names to change the labels shown for Hers, His, and Shared. These labels do not change item assignments.</li>
+                <li>Importing a backup replaces the current inventory, categories, and owner names when those names are included.</li>
+            </ul>
+            <h4>Offline and data</h4>
+            <p>After opening FIDO online once, the app shell is cached for offline use. Inventory, categories, and owner names are stored in this browser. Export a backup regularly to avoid data loss.</p>
+            <p><a href="README.md" target="_blank" rel="noopener">Open the full README</a></p>
+        </section>
     </main>
 
-    <script defer src="app.js"></script>
+    <script defer src="app.js?v=9"></script>
 </body>
 </html>

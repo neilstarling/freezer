@@ -1,11 +1,13 @@
 /* APPLICATION UNIVERSAL STYLES */
 body { font-family: Arial, sans-serif; background: #eef2f5; margin: 0; padding: 20px; color: #333; }
-header { text-align: center; margin-bottom: 20px; }
-h1 { color: #1a365d; margin-bottom: 15px; }
+header { text-align: center; margin-bottom: 20px; position: relative; }
+h1 { color: #1a365d; margin: 0 48px 15px; }
 h2 { color: #1a365d; }
 .nav-btn, .tab-btn, button { padding: 10px; font-size: 0.9rem; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: bold; background: #cbd5e1; color: #475569; }
 .install-app-button { background: #0f766e; color: #fff; }
-.nav-btn.active, .tab-btn.active { background: #1a365d !important; color: #fff !important; }
+.nav-btn.active, .tab-btn.active:not(.status-tab) { background: #1a365d !important; color: #fff !important; }
+.settings-button { position: absolute; top: 0; right: 0; width: 42px; height: 42px; padding: 0; font-size: 1.5rem; line-height: 1; }
+.settings-button.active { background: #1a365d; color: #fff; }
 .screen-view { display: none; }
 .screen-view.active { display: block; }
 
@@ -16,9 +18,14 @@ h2 { color: #1a365d; }
 #add-item-form button { background: #10b981; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
 
 /* TABS */
-.gender-tabs, .owner-tabs { display: flex; gap: 10px; justify-content: center; margin-bottom: 12px; flex-wrap: wrap; }
+.inventory-filter-row { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
+.gender-tabs, .owner-tabs { display: flex; flex: 0 0 auto; gap: 8px; justify-content: center; margin-bottom: 0; flex-wrap: nowrap; }
 .tab-btn { background: #cbd5e1; color: #475569; }
-.owner-tabs { margin-bottom: 20px; }
+.status-tab[data-filter="fresh"] { background: #15803d; border-color: #166534; color: #fff; }
+.status-tab[data-filter="fresh"].active { background: #166534; border-color: #14532d; color: #fff; }
+.status-tab[data-filter="expired"] { background: #dc2626; border-color: #b91c1c; color: #fff; }
+.status-tab[data-filter="expired"].active { background: #b91c1c; border-color: #991b1b; color: #fff; }
+.filter-separator { height: 24px; flex: 0 0 1px; background: #94a3b8; }
 
 /* ITEMS LIST */
 #items-list { display: flex; flex-direction: column; gap: 10px; max-width: 800px; margin: 0 auto; }
@@ -35,6 +42,17 @@ h2 { color: #1a365d; }
 .time-remaining-label { font-size: 0.8rem; color: #475569; }
 .item-delete { position: absolute; right: 8px; top: 8px; padding: 4px 8px; background: rgba(15, 23, 42, 0.12); color: inherit; font-size: 1.1rem; line-height: 1; border: none; border-radius: 4px; cursor: pointer; }
 .expiry-note { width: 100%; margin: 0; color: #64748b; font-size: 0.85rem; }
+.settings-section { max-width: 800px; margin: 0 auto 24px; }
+.settings-section h3 { color: #1a365d; margin-bottom: 10px; }
+.settings-section > p { color: #64748b; }
+.settings-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+.owner-label-form { max-width: 800px; margin: 0 auto; display: flex; align-items: end; gap: 10px; flex-wrap: wrap; }
+.owner-label-field { flex: 1; min-width: 140px; display: flex; flex-direction: column; gap: 6px; font-weight: bold; }
+.owner-label-field input { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.help-content { max-width: 800px; margin: 0 auto; padding: 16px; background: #fff; border-radius: 8px; line-height: 1.55; }
+.help-content h3, .help-content h4 { color: #1a365d; }
+.help-content li { margin-bottom: 8px; }
+[hidden] { display: none !important; }
 
 /* CATEGORY MANAGEMENT */
 .category-form, .category-row { max-width: 800px; margin: 0 auto 10px; padding: 12px; background: #fff; border-radius: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }

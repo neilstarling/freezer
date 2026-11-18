@@ -1,4 +1,4 @@
-# Freezer Inventory PWA
+# FIDO PWA
 
 A browser-based Progressive Web App for tracking what's stored in your freezer, including item counts, categories, and expiration dates.
 
@@ -8,15 +8,18 @@ A browser-based Progressive Web App for tracking what's stored in your freezer, 
 - **Automatic expiry**: Items expire 30 days after they are added
 - **Time remaining**: Each item shows the percentage of its 30-day lifespan remaining
 - **Quick add**: Re-add previously used items from a deduplicated list grouped by owner (Hers, His, Shared) and sorted alphabetically, with live search as you type; name, owner, and category pre-fill the Add Item form
-- **Manage food categories**: Add, rename, and delete categories; deleting one moves its items to Shared / Uncategorized
+- **Custom owner names**: Change the displayed names for Hers, His, and Shared in Settings without changing existing item assignments
+- **Manage food categories**: Add, rename, and delete categories; deleting one moves its items to Uncategorized
 - **Inventory view**: See all items as color-coded tiles with owner and category labels
+- **Day tracking**: See how long each item has been in the freezer and how long until its sell-by date
 - **Expiration tracking**: Visual warnings for expired items (red) and soon-to-expire items (orange)
-- **Filter by status**: View All or Expired items
+- **Filter by status**: View Fresh or Expired items
 - **Sort items**: Sort by name, expiry date, or sell-by date
 - **Delete items**: Remove items you've used up
-- **Export/Import**: Back up your inventory as JSON and restore it later (adds imported items to the current list)
+- **Export/Import**: Back up your inventory as JSON and restore it later (import replaces the current inventory, categories, and owner names when included)
 - **Offline-first**: Works without an internet connection after first visit
 - **Installable**: Add to home screen as a standalone app
+- **Settings and Help**: Add items, manage categories, customize owner names, import/export inventory, and read the in-app help guide from the gear button
 
 ## Getting Started
 

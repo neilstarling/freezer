@@ -1,7 +1,7 @@
 {
   "id": "freezer-inventory",
-  "name": "Freezer Inventory",
-  "short_name": "Freezer",
+  "name": "FIDO",
+  "short_name": "FIDO",
   "description": "Track what's stored in your freezer, including item counts and expiration dates.",
   "start_url": "./",
   "scope": "./",

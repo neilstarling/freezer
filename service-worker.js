@@ -1,10 +1,11 @@
-const CACHE_NAME = 'freezer-inventory-shell-v3';
+const CACHE_NAME = 'freezer-inventory-shell-v9';
 const APP_SHELL_FILES = [
     './',
     './index.html',
-    './style.css',
-    './app.js',
-    './manifest.webmanifest',
+    './style.css?v=9',
+    './app.js?v=9',
+    './manifest.webmanifest?v=9',
+    './README.md',
     './icons/freezer192.png',
     './icons/freezer512.png',
     './icons/freezer512-maskable.png'
