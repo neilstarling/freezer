@@ -204,7 +204,7 @@ function setupEventListeners() {
         importFileInput.addEventListener('change', e => {
             const file = e.target.files[0];
             if (file) {
-                if (confirm('Importing will add items to your current inventory. Continue?')) {
+                if (confirm('Importing this file will REPLACE your current inventory. Continue?')) {
                     importItems(file);
                 }
                 importFileInput.value = '';
@@ -526,7 +526,7 @@ function saveItems() {
 
 // Export as JSON
 function exportItems() {
-    const data = JSON.stringify(items, null, 2);
+    const data = JSON.stringify({ items, categories }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -542,9 +542,21 @@ function importItems(file) {
     reader.onload = e => {
         try {
             const imported = JSON.parse(e.target.result);
-            if (Array.isArray(imported)) {
+            // Support both new format { items, categories } and legacy array format
+            const importedItems = Array.isArray(imported) ? imported : imported.items;
+            const importedCategories = Array.isArray(imported) ? null : imported.categories;
+            if (!Array.isArray(importedItems)) {
+                alert('Invalid data format.');
+                return;
+            }
+            {
                 const importedAt = Date.now();
-                const importedItems = imported.map((item, index) => {
+                // Overwrite categories if provided in the backup
+                if (Array.isArray(importedCategories) && importedCategories.length > 0) {
+                    categories.splice(0, categories.length, ...importedCategories);
+                    saveCategories();
+                }
+                const normalizedItems = importedItems.map((item, index) => {
                     const addedDate = new Date(item.added);
                     const added = Number.isNaN(addedDate.getTime()) ? new Date(importedAt + index) : addedDate;
                     const sellBy = item.sellBy ? new Date(item.sellBy) : null;
@@ -560,13 +572,11 @@ function importItems(file) {
                         date: new Date(added.getTime() + EXPIRY_DURATION_MS)
                     };
                 });
-                items = [...items, ...importedItems];
+                items = normalizedItems;
                 saveItems();
                 renderItems();
                 renderQuickAdd();
-                alert('Items imported successfully!');
-            } else {
-                alert('Invalid data format.');
+                alert('Inventory imported successfully!');
             }
         } catch (err) {
             alert('Error parsing JSON: ' + err.message);
