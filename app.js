@@ -44,6 +44,7 @@ let currentSort = 'name';
 const itemsList = document.getElementById('items-list');
 const addItemForm = document.getElementById('add-item-form');
 const itemName = document.getElementById('item-name');
+const itemQuantity = document.getElementById('item-quantity');
 const itemOwner = document.getElementById('item-owner');
 const itemCategory = document.getElementById('item-category');
 const itemSellBy = document.getElementById('item-sellby');
@@ -191,6 +192,7 @@ function loadItems() {
                 ...item,
                 id,
                 name,
+                quantity: normalizeItemQuantity(item.quantity),
                 owner: isKnownOwner(item.owner) ? item.owner : 'shared',
                 category: categories.some(category => category.id === item.category)
                     ? item.category
@@ -213,6 +215,10 @@ function isExpired(date, today = new Date()) {
 
 function isKnownOwner(owner) {
     return Object.prototype.hasOwnProperty.call(OWNERS, owner);
+}
+
+function normalizeItemQuantity(quantity) {
+    return Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1;
 }
 
 function parseSellByDate(value) {
@@ -519,16 +525,19 @@ async function installPwa() {
 // Add Item
 function addItem() {
     const name = itemName.value.trim();
+    const quantity = Number(itemQuantity.value);
     const owner = itemOwner.value;
     const category = itemCategory.value;
     const sellByValue = itemSellBy ? itemSellBy.value.trim() : '';
     const sellByDate = parseSellByDate(sellByValue);
-    if (!name || !isKnownOwner(owner) || !categories.some(entry => entry.id === category)) return;
+    if (!name || !Number.isSafeInteger(quantity) || quantity < 1
+        || !isKnownOwner(owner) || !categories.some(entry => entry.id === category)) return;
 
     const added = new Date();
     const item = {
         id: Date.now(),
         name,
+        quantity,
         owner,
         category,
         sellBy: sellByDate && !Number.isNaN(sellByDate.getTime()) ? sellByDate : null,
@@ -540,6 +549,7 @@ function addItem() {
     renderItems();
     renderQuickAdd();
     itemName.value = '';
+    itemQuantity.value = '1';
     if (itemSellBy) itemSellBy.value = '';
 }
 
@@ -584,6 +594,7 @@ function renderItems(filter = currentFilter) {
                 <span class="item-name">${escapeHtml(item.name)}</span>
                 <div class="item-meta">
                     <span class="item-date ${expired ? 'expired' : ''}">Expires: ${dateStr}</span>
+                    <span>${item.quantity} left in freezer</span>
                     <span>In freezer: ${daysInFreezer} ${daysInFreezer === 1 ? 'day' : 'days'}</span>
                     ${item.sellBy ? `<span class="item-sellby">Sell by: ${sellByStr} · ${daysUntilSellBy >= 0 ? `${daysUntilSellBy} ${daysUntilSellBy === 1 ? 'day' : 'days'} to go` : `${Math.abs(daysUntilSellBy)} ${Math.abs(daysUntilSellBy) === 1 ? 'day' : 'days'} past`}</span>` : '<span class="item-date">No sell-by date</span>'}
                     <span>${escapeHtml(ownerLabels[item.owner] || ownerLabels.shared)} · ${escapeHtml(category?.name || 'Uncategorized')}</span>
@@ -592,7 +603,7 @@ function renderItems(filter = currentFilter) {
                     <div class="time-remaining-bar" style="width: ${percentage}%"></div>
                 </div>
                 <span class="time-remaining-label">Time left: ${percentage}%</span>
-                <button class="item-delete" data-id="${itemId}" aria-label="Remove ${escapeHtml(item.name)}">✕</button>
+                <button class="item-delete" data-id="${itemId}" aria-label="Remove one ${escapeHtml(item.name)}">✕</button>
             </div>
         `;
     }).join('');
@@ -631,7 +642,7 @@ function deleteItem(id) {
     const item = items.find(entry => String(entry.id) === String(id));
     if (!item) return;
 
-    const addToBuyList = confirm(`Add "${item.name}" to your Buy list? The inventory item will be removed either way.`);
+    const addToBuyList = confirm(`Add one "${item.name}" to your Buy list? One unit will be removed from the freezer either way.`);
     if (addToBuyList) {
         buyList.push({
             id: `buy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -643,7 +654,11 @@ function deleteItem(id) {
         renderBuyList();
     }
 
-    items = items.filter(entry => String(entry.id) !== String(id));
+    if (item.quantity > 1) {
+        item.quantity -= 1;
+    } else {
+        items = items.filter(entry => String(entry.id) !== String(id));
+    }
     saveItems();
     renderItems();
     renderQuickAdd();
@@ -772,6 +787,7 @@ function quickAddPrevious(templateId) {
     if (!templateItem) return;
 
     itemName.value = templateItem.name;
+    itemQuantity.value = '1';
     itemOwner.value = templateItem.owner;
     itemCategory.value = templateItem.category;
     if (itemSellBy) itemSellBy.value = '';
@@ -853,6 +869,7 @@ function importItems(file) {
                     ...item,
                     id,
                     name: item.name.trim(),
+                    quantity: normalizeItemQuantity(item.quantity),
                     owner: isKnownOwner(item.owner) ? item.owner : 'shared',
                     category: nextCategories.some(category => category.id === item.category)
                         ? item.category

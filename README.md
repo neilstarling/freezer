@@ -4,7 +4,7 @@ A browser-based Progressive Web App for tracking what's stored in your freezer, 
 
 ## Features
 
-- **Add items**: Enter an item name, assign it to Hers, His, Shared, Misc, or Cakes, select a food category, and optionally set a sell-by date
+- **Add items**: Enter an item name, quantity, owner, category, and optionally set a sell-by date (new items default to quantity 1)
 - **Automatic expiry**: Items expire 30 days after they are added
 - **Time remaining**: Each item shows the percentage of its 30-day lifespan remaining
 - **Quick add**: Re-add previously used items from a deduplicated list grouped by owner and sorted alphabetically, with live search as you type; name, owner, and category pre-fill the Add Item form
@@ -16,6 +16,7 @@ A browser-based Progressive Web App for tracking what's stored in your freezer, 
 - **Filter by status**: View Fresh or Expired items
 - **Sort items**: Sort by name, expiry date, or sell-by date
 - **Delete items**: Remove items you've used up
+- **Quantities**: Track how many of each item are in the freezer; each removal decrements the quantity by one
 - **Buy list**: When removing an inventory item, choose whether to add it to the Buy list; mark purchases done to clear them
 - **Export/Import**: Back up your inventory and Buy list as JSON and restore it later (import replaces the inventory and any Buy list in the backup; categories and owner names are replaced when included)
 - **Offline-first**: Works without an internet connection after first visit
