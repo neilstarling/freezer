@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIDO</title>
     <meta name="theme-color" content="#0b7a87">
-    <link rel="manifest" href="manifest.webmanifest?v=9">
-    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="manifest" href="manifest.webmanifest?v=12">
+    <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
     <header>
@@ -15,24 +15,21 @@
         <nav class="main-nav">
             <button class="nav-btn active" data-screen="inventory">Inventory</button>
             <button class="nav-btn" data-screen="quick-add">Quick Add</button>
+            <button class="nav-btn" data-screen="buy">Buy</button>
+            <button class="tab-btn status-tab status-nav-btn active" id="tab-fresh" data-filter="fresh" type="button" aria-pressed="true">Fresh</button>
+            <button class="tab-btn status-tab status-nav-btn" id="tab-expired" data-filter="expired" type="button" aria-pressed="false">Exp</button>
             <button id="install-app-button" class="install-app-button" type="button" data-action="install-app" hidden>Install App</button>
         </nav>
     </header>
 
     <!-- INVENTORY SCREEN -->
     <main id="inventory-screen" class="screen-view active">
-        <div class="inventory-filter-row">
-            <div class="gender-tabs" aria-label="Filter by freshness">
-                <button class="tab-btn status-tab active" id="tab-fresh" data-filter="fresh">Fresh</button>
-                <button class="tab-btn status-tab" id="tab-expired" data-filter="expired">Expired</button>
-            </div>
-            <span class="filter-separator" aria-hidden="true"></span>
-            <div class="owner-tabs" aria-label="Filter by owner">
-                <button class="tab-btn owner-tab active" data-owner="all">All</button>
-                <button class="tab-btn owner-tab" data-owner="hers">Hers</button>
-                <button class="tab-btn owner-tab" data-owner="his">His</button>
-                <button class="tab-btn owner-tab" data-owner="shared">Shared</button>
-            </div>
+        <div class="owner-tabs" aria-label="Filter by owner">
+            <button class="tab-btn owner-tab" data-owner="hers" aria-pressed="false">Hers</button>
+            <button class="tab-btn owner-tab" data-owner="his" aria-pressed="false">His</button>
+            <button class="tab-btn owner-tab" data-owner="shared" aria-pressed="false">Shared</button>
+            <button class="tab-btn owner-tab" data-owner="misc" aria-pressed="false">Misc</button>
+            <button class="tab-btn owner-tab" data-owner="cakes" aria-pressed="false">Cakes</button>
         </div>
         <div class="sort-dropdown-container" style="margin-bottom: 12px; display: flex; justify-content: center;">
             <label for="sort-select" style="margin-right: 8px; font-weight: bold;">Sort by:</label>
@@ -55,6 +52,12 @@
         <div id="quick-add-list"></div>
     </main>
 
+    <main id="buy-screen" class="screen-view">
+        <h2>Buy</h2>
+        <p class="buy-list-description">Items you chose to replace after removing them from your freezer.</p>
+        <div id="buy-list" class="buy-list"></div>
+    </main>
+
     <main id="settings-screen" class="screen-view">
         <h2>Settings</h2>
         <div class="settings-tabs" role="tablist" aria-label="Settings pages">
@@ -70,6 +73,8 @@
                         <option value="hers">Hers</option>
                         <option value="his">His</option>
                         <option value="shared" selected>Shared</option>
+                        <option value="misc">Misc</option>
+                        <option value="cakes">Cakes</option>
                     </select>
                     <select id="item-category" aria-label="Food category"></select>
                     <input type="date" id="item-sellby" placeholder="Sell by (YYYY-MM-DD)" aria-label="Sell by date">
@@ -103,6 +108,14 @@
                         <span>Shared</span>
                         <input type="text" id="owner-label-shared" name="shared" maxlength="30" required>
                     </label>
+                    <label class="owner-label-field" for="owner-label-misc">
+                        <span>Misc</span>
+                        <input type="text" id="owner-label-misc" name="misc" maxlength="30" required>
+                    </label>
+                    <label class="owner-label-field" for="owner-label-cakes">
+                        <span>Cakes</span>
+                        <input type="text" id="owner-label-cakes" name="cakes" maxlength="30" required>
+                    </label>
                     <button type="submit">Save Owner Names</button>
                 </form>
             </section>
@@ -124,19 +137,20 @@
                 <li>Use the owner filters to see everyone’s items or one owner’s items. Sort by name, expiry date, or sell-by date.</li>
                 <li>Each item shows how many days it has been in the freezer and how many days remain until its sell-by date.</li>
                 <li>Use Quick Add to select a previous item and prefill the add form.</li>
+                <li>When removing an inventory item, choose whether to add it to the Buy list. Use Buy to remove items once purchased.</li>
             </ul>
             <h4>Settings</h4>
             <ul>
                 <li>Add items, manage food categories, and export or import a JSON backup from the Settings tab.</li>
-                <li>Use Owner Names to change the labels shown for Hers, His, and Shared. These labels do not change item assignments.</li>
-                <li>Importing a backup replaces the current inventory, categories, and owner names when those names are included.</li>
+                <li>Use Owner Names to change the labels shown for Hers, His, Shared, Misc, and Cakes. These labels do not change item assignments.</li>
+                <li>Importing a backup replaces the inventory and any Buy list in the backup; categories and owner names are replaced when included.</li>
             </ul>
             <h4>Offline and data</h4>
-            <p>After opening FIDO online once, the app shell is cached for offline use. Inventory, categories, and owner names are stored in this browser. Export a backup regularly to avoid data loss.</p>
+            <p>After opening FIDO online once, the app shell is cached for offline use. Inventory, the Buy list, categories, and owner names are stored in this browser. Export a backup regularly to avoid data loss.</p>
             <p><a href="README.md" target="_blank" rel="noopener">Open the full README</a></p>
         </section>
     </main>
 
-    <script defer src="app.js?v=9"></script>
+    <script defer src="app.js?v=12"></script>
 </body>
 </html>

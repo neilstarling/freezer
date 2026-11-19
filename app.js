@@ -4,12 +4,15 @@
 const ITEMS_KEY = 'freezer-inventory-items';
 const CATEGORIES_KEY = 'freezer-inventory-categories';
 const OWNER_LABELS_KEY = 'freezer-inventory-owner-labels';
+const BUY_LIST_KEY = 'freezer-inventory-buy-list';
 const EXPIRY_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 const UNCATEGORIZED_ID = 'uncategorized';
 const OWNERS = {
     hers: 'Hers',
     his: 'His',
-    shared: 'Shared'
+    shared: 'Shared',
+    misc: 'Misc',
+    cakes: 'Cakes'
 };
 const DEFAULT_CATEGORIES = [
     { id: 'meat', name: 'Meat' },
@@ -32,6 +35,7 @@ const CATEGORY_COLORS = {
 let categories = loadCategories();
 let items = loadItems();
 let ownerLabels = loadOwnerLabels();
+let buyList = loadBuyList();
 let currentFilter = 'fresh';
 let currentOwnerFilter = 'all';
 let currentSort = 'name';
@@ -52,6 +56,7 @@ const exportButton = document.getElementById('export-button');
 const importButton = document.getElementById('import-button');
 const importFileInput = document.getElementById('import-file-input');
 const ownerTabs = document.querySelectorAll('.owner-tab');
+const buyListElement = document.getElementById('buy-list');
 const categoryList = document.getElementById('category-list');
 const addCategoryForm = document.getElementById('add-category-form');
 const newCategoryName = document.getElementById('new-category-name');
@@ -68,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderOwnerLabels();
     renderItems();
     renderQuickAdd();
+    renderBuyList();
     setupEventListeners();
     setupInstallPrompt();
     setInterval(() => {
@@ -117,7 +123,10 @@ function loadOwnerLabels() {
                 ? parsed[owner].trim()
                 : OWNERS[owner]
         ]));
-        if (new Set(Object.values(labels).map(label => label.toLowerCase())).size !== Object.keys(OWNERS).length) {
+        const savedLabels = Object.keys(OWNERS)
+            .filter(owner => typeof parsed?.[owner] === 'string' && parsed[owner].trim())
+            .map(owner => labels[owner].toLowerCase());
+        if (new Set(savedLabels).size !== savedLabels.length) {
             throw new TypeError('Saved owner labels are not unique.');
         }
         return labels;
@@ -125,6 +134,40 @@ function loadOwnerLabels() {
         console.error('Unable to load saved owner labels:', error);
         return { ...OWNERS };
     }
+}
+
+function loadBuyList() {
+    const storedBuyList = localStorage.getItem(BUY_LIST_KEY);
+    if (!storedBuyList) return [];
+
+    try {
+        return normalizeBuyList(JSON.parse(storedBuyList), categories);
+    } catch (error) {
+        console.error('Unable to load saved Buy list:', error);
+        return [];
+    }
+}
+
+function normalizeBuyList(entries, availableCategories, timestamp = Date.now()) {
+    if (!Array.isArray(entries)) throw new TypeError('Buy list must be an array.');
+
+    return entries.map((entry, index) => {
+        if (!entry || typeof entry !== 'object' || typeof entry.name !== 'string' || !entry.name.trim()) {
+            throw new TypeError(`Buy list item ${index + 1} is invalid.`);
+        }
+        const id = (typeof entry.id === 'number' && Number.isFinite(entry.id))
+            || (typeof entry.id === 'string' && entry.id.trim())
+            ? entry.id
+            : `buy-${timestamp}-${index}`;
+        return {
+            id,
+            name: entry.name.trim(),
+            owner: isKnownOwner(entry.owner) ? entry.owner : 'shared',
+            category: availableCategories.some(category => category.id === entry.category)
+                ? entry.category
+                : UNCATEGORIZED_ID
+        };
+    });
 }
 
 function loadItems() {
@@ -195,11 +238,16 @@ function normalizeOwnerLabels(labels) {
     }
 
     const normalized = Object.fromEntries(Object.keys(OWNERS).map(owner => {
-        const label = typeof labels[owner] === 'string' ? labels[owner].trim() : '';
+        const label = labels[owner] === undefined
+            ? OWNERS[owner]
+            : typeof labels[owner] === 'string' ? labels[owner].trim() : '';
         if (!label) throw new TypeError('Owner names cannot be empty.');
         return [owner, label];
     }));
-    if (new Set(Object.values(normalized).map(label => label.toLowerCase())).size !== Object.keys(OWNERS).length) {
+    const providedLabels = Object.keys(OWNERS)
+        .filter(owner => labels[owner] !== undefined)
+        .map(owner => normalized[owner].toLowerCase());
+    if (new Set(providedLabels).size !== providedLabels.length) {
         throw new TypeError('Owner names must be unique.');
     }
     return normalized;
@@ -213,6 +261,9 @@ function setupEventListeners() {
     });
     tabFresh.addEventListener('click', () => switchTab('fresh'));
     tabExpired.addEventListener('click', () => switchTab('expired'));
+    [tabFresh, tabExpired].forEach(button => {
+        button.addEventListener('click', () => navigateToScreen('inventory'));
+    });
     ownerTabs.forEach(button => {
         button.addEventListener('click', () => switchOwnerFilter(button.dataset.owner));
     });
@@ -232,6 +283,12 @@ function setupEventListeners() {
     }
     if (quickAddSearch) {
         quickAddSearch.addEventListener('input', () => renderQuickAdd(quickAddSearch.value));
+    }
+    if (buyListElement) {
+        buyListElement.addEventListener('click', event => {
+            const button = event.target.closest('[data-remove-buy-id]');
+            if (button) removeFromBuyList(button.dataset.removeBuyId);
+        });
     }
     if (ownerLabelForm) {
         ownerLabelForm.addEventListener('submit', event => {
@@ -268,13 +325,7 @@ function setupEventListeners() {
     navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const screenId = btn.dataset.screen;
-            navButtons.forEach(b => {
-                b.classList.toggle('active', b.dataset.screen === screenId);
-            });
-            document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
-            const screen = document.getElementById(`${screenId}-screen`);
-            if (screen) screen.classList.add('active');
-            if (screenId === 'settings') switchSettingsTab('settings');
+            navigateToScreen(screenId);
         });
     });
     if (installButton) {
@@ -295,6 +346,16 @@ function setupEventListeners() {
             }
         });
     }
+}
+
+function navigateToScreen(screenId) {
+    navButtons.forEach(button => {
+        button.classList.toggle('active', button.dataset.screen === screenId);
+    });
+    document.querySelectorAll('.screen-view').forEach(screen => screen.classList.remove('active'));
+    const screen = document.getElementById(`${screenId}-screen`);
+    if (screen) screen.classList.add('active');
+    if (screenId === 'settings') switchSettingsTab('settings');
 }
 
 function renderCategories() {
@@ -352,6 +413,7 @@ function saveOwnerLabelEdits() {
     renderOwnerLabels();
     renderItems();
     renderQuickAdd();
+    renderBuyList();
 }
 
 function switchSettingsTab(tab) {
@@ -416,11 +478,17 @@ function deleteCategory(id) {
         ? { ...item, category: UNCATEGORIZED_ID }
         : item
     );
+    buyList = buyList.map(item => item.category === id
+        ? { ...item, category: UNCATEGORIZED_ID }
+        : item
+    );
     saveCategories();
     saveItems();
+    saveBuyList();
     renderCategories();
     renderItems();
     renderQuickAdd();
+    renderBuyList();
 }
 
 // PWA Install Prompt
@@ -560,10 +628,57 @@ function sortItems(arr, sortField) {
 
 // Delete Item
 function deleteItem(id) {
-    items = items.filter(item => String(item.id) !== String(id));
+    const item = items.find(entry => String(entry.id) === String(id));
+    if (!item) return;
+
+    const addToBuyList = confirm(`Add "${item.name}" to your Buy list? The inventory item will be removed either way.`);
+    if (addToBuyList) {
+        buyList.push({
+            id: `buy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            name: item.name,
+            owner: item.owner,
+            category: item.category
+        });
+        saveBuyList();
+        renderBuyList();
+    }
+
+    items = items.filter(entry => String(entry.id) !== String(id));
     saveItems();
     renderItems();
     renderQuickAdd();
+}
+
+function renderBuyList() {
+    if (!buyListElement) return;
+    if (buyList.length === 0) {
+        buyListElement.innerHTML = '<p class="buy-list-empty">Your Buy list is empty. Remove an inventory item and choose to add it here.</p>';
+        return;
+    }
+
+    buyListElement.innerHTML = buyList.map(item => {
+        const category = categories.find(entry => entry.id === item.category);
+        const itemId = escapeHtml(String(item.id));
+        return `
+            <div class="buy-list-item">
+                <div>
+                    <div class="buy-list-item-name">${escapeHtml(item.name)}</div>
+                    <div class="buy-list-item-meta">${escapeHtml(ownerLabels[item.owner] || ownerLabels.shared)} · ${escapeHtml(category?.name || 'Uncategorized')}</div>
+                </div>
+                <button type="button" class="buy-list-done" data-remove-buy-id="${itemId}" aria-label="Remove ${escapeHtml(item.name)} from Buy list">Done</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function saveBuyList() {
+    localStorage.setItem(BUY_LIST_KEY, JSON.stringify(buyList));
+}
+
+function removeFromBuyList(id) {
+    buyList = buyList.filter(item => String(item.id) !== String(id));
+    saveBuyList();
+    renderBuyList();
 }
 
 // Switch Tab
@@ -571,13 +686,17 @@ function switchTab(filter) {
     currentFilter = filter;
     tabFresh.classList.toggle('active', filter === 'fresh');
     tabExpired.classList.toggle('active', filter === 'expired');
+    tabFresh.setAttribute('aria-pressed', String(filter === 'fresh'));
+    tabExpired.setAttribute('aria-pressed', String(filter === 'expired'));
     renderItems(filter);
 }
 
 function switchOwnerFilter(owner) {
-    currentOwnerFilter = owner;
+    currentOwnerFilter = currentOwnerFilter === owner ? 'all' : owner;
     ownerTabs.forEach(button => {
-        button.classList.toggle('active', button.dataset.owner === owner);
+        const active = button.dataset.owner === currentOwnerFilter;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
     });
     renderItems();
 }
@@ -606,8 +725,8 @@ function renderQuickAdd(query = '') {
         return;
     }
 
-    // Group by owner in fixed order: hers, his, shared
-    const ownerOrder = ['hers', 'his', 'shared'];
+    // Keep owner groups in a stable display order.
+    const ownerOrder = Object.keys(OWNERS);
     const groups = {};
     ownerOrder.forEach(o => groups[o] = []);
     list.forEach(item => {
@@ -673,7 +792,7 @@ function saveItems() {
 
 // Export as JSON
 function exportItems() {
-    const data = JSON.stringify({ items, categories, ownerLabels }, null, 2);
+    const data = JSON.stringify({ items, categories, ownerLabels, buyList }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -693,6 +812,7 @@ function importItems(file) {
             const importedItems = Array.isArray(imported) ? imported : imported.items;
             const importedCategories = Array.isArray(imported) ? null : imported.categories;
             const importedOwnerLabels = Array.isArray(imported) ? undefined : imported.ownerLabels;
+            const importedBuyList = Array.isArray(imported) ? undefined : imported.buyList;
             if (!Array.isArray(importedItems)) {
                 alert('Invalid data format.');
                 return;
@@ -701,12 +821,16 @@ function importItems(file) {
             const importedAt = Date.now();
             let nextCategories = categories;
             let nextOwnerLabels = ownerLabels;
+            let nextBuyList = buyList;
 
             if (Array.isArray(importedCategories)) {
                 nextCategories = normalizeImportedCategories(importedCategories);
             }
             if (importedOwnerLabels !== undefined) {
                 nextOwnerLabels = normalizeOwnerLabels(importedOwnerLabels);
+            }
+            if (importedBuyList !== undefined) {
+                nextBuyList = normalizeBuyList(importedBuyList, nextCategories, importedAt);
             }
 
             const normalizedItems = importedItems.map((item, index) => {
@@ -742,13 +866,16 @@ function importItems(file) {
             categories = nextCategories;
             items = normalizedItems;
             ownerLabels = nextOwnerLabels;
+            buyList = nextBuyList;
             saveCategories();
             saveItems();
             localStorage.setItem(OWNER_LABELS_KEY, JSON.stringify(ownerLabels));
+            saveBuyList();
             renderCategories();
             renderOwnerLabels();
             renderItems();
             renderQuickAdd();
+            renderBuyList();
             alert('Inventory imported successfully!');
         } catch (err) {
             alert('Error parsing JSON: ' + err.message);

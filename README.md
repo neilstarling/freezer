@@ -4,11 +4,11 @@ A browser-based Progressive Web App for tracking what's stored in your freezer, 
 
 ## Features
 
-- **Add items**: Enter an item name, assign it to Hers, His, or Shared, select a food category, and optionally set a sell-by date
+- **Add items**: Enter an item name, assign it to Hers, His, Shared, Misc, or Cakes, select a food category, and optionally set a sell-by date
 - **Automatic expiry**: Items expire 30 days after they are added
 - **Time remaining**: Each item shows the percentage of its 30-day lifespan remaining
-- **Quick add**: Re-add previously used items from a deduplicated list grouped by owner (Hers, His, Shared) and sorted alphabetically, with live search as you type; name, owner, and category pre-fill the Add Item form
-- **Custom owner names**: Change the displayed names for Hers, His, and Shared in Settings without changing existing item assignments
+- **Quick add**: Re-add previously used items from a deduplicated list grouped by owner and sorted alphabetically, with live search as you type; name, owner, and category pre-fill the Add Item form
+- **Custom owner names**: Change the displayed names for Hers, His, Shared, Misc, and Cakes in Settings without changing existing item assignments
 - **Manage food categories**: Add, rename, and delete categories; deleting one moves its items to Uncategorized
 - **Inventory view**: See all items as color-coded tiles with owner and category labels
 - **Day tracking**: See how long each item has been in the freezer and how long until its sell-by date
@@ -16,7 +16,8 @@ A browser-based Progressive Web App for tracking what's stored in your freezer, 
 - **Filter by status**: View Fresh or Expired items
 - **Sort items**: Sort by name, expiry date, or sell-by date
 - **Delete items**: Remove items you've used up
-- **Export/Import**: Back up your inventory as JSON and restore it later (import replaces the current inventory, categories, and owner names when included)
+- **Buy list**: When removing an inventory item, choose whether to add it to the Buy list; mark purchases done to clear them
+- **Export/Import**: Back up your inventory and Buy list as JSON and restore it later (import replaces the inventory and any Buy list in the backup; categories and owner names are replaced when included)
 - **Offline-first**: Works without an internet connection after first visit
 - **Installable**: Add to home screen as a standalone app
 - **Settings and Help**: Add items, manage categories, customize owner names, import/export inventory, and read the in-app help guide from the gear button
@@ -31,7 +32,7 @@ A browser-based Progressive Web App for tracking what's stored in your freezer, 
 
 ## Data Storage
 
-Your freezer inventory is stored in your browser's local storage. Export a JSON backup regularly to avoid data loss. Clearing browser site data will remove your local inventory.
+Your freezer inventory and Buy list are stored in your browser's local storage. Export a JSON backup regularly to avoid data loss. Clearing browser site data will remove your local data.
 
 ## Icons
 
